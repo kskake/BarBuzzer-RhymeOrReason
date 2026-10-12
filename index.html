@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Rhyme or Reason - BarBuzzer</title>
+    <meta name="description" content="Rhyme or Reason: a free creative wordplay party game for 2–6 players. Come up with a rhyme or a reason for random prompts on the spot — judge voting and 15-second timer included.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/styles.css">
+    
+    <style>
+        :root {
+            --neon-green: #32ff00;
+            --neon-pink: #ff007f;
+            --neon-cyan: #00ffff;
+            --neon-purple: #bf00ff;
+            --dark-bg: #0b1220;
+            --card-bg: #161b22;
+        }
+        
+        body {
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(180deg, #0a0a0f 0%, var(--dark-bg) 100%);
+            min-height: 100vh;
+        }
+
+        .neon-glow-pink {
+            color: var(--neon-pink);
+            text-shadow: 0 0 20px var(--neon-pink), 0 0 40px rgba(255, 0, 127, 0.5);
+        }
+
+        .neon-glow-green {
+            color: var(--neon-green);
+            text-shadow: 0 0 20px var(--neon-green), 0 0 40px rgba(50, 255, 0, 0.5);
+        }
+
+        .neon-glow-cyan {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 20px var(--neon-cyan), 0 0 40px rgba(0, 255, 255, 0.5);
+        }
+
+        .game-card {
+            background: linear-gradient(135deg, var(--card-bg), rgba(13, 17, 23, 0.95));
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .neon-button {
+            background-color: var(--dark-bg);
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 0 8px var(--neon-green);
+            font-weight: 700;
+            padding: 0.875rem 1.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+        }
+
+        .neon-button:hover:not(:disabled) {
+            background-color: var(--neon-green);
+            color: var(--dark-bg);
+            box-shadow: 0 0 30px var(--neon-green), 0 4px 16px rgba(50, 255, 0, 0.4);
+            text-shadow: none;
+            transform: translateY(-2px);
+        }
+
+        .neon-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .neon-button-pink {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
+        }
+
+        .neon-button-pink:hover:not(:disabled) {
+            background-color: var(--neon-pink);
+            color: white;
+            box-shadow: 0 0 30px var(--neon-pink), 0 4px 16px rgba(255, 0, 127, 0.4);
+        }
+
+        .neon-button-cyan {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .neon-button-cyan:hover:not(:disabled) {
+            background-color: var(--neon-cyan);
+            color: var(--dark-bg);
+            box-shadow: 0 0 30px var(--neon-cyan), 0 4px 16px rgba(0, 255, 255, 0.4);
+        }
+
+        .player-card {
+            background-color: rgba(22, 27, 34, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            padding: 1rem;
+            border-radius: 0.75rem;
+        }
+
+        .player-active {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px var(--neon-cyan);
+            background-color: rgba(0, 255, 255, 0.05);
+        }
+
+        .prompt-card {
+            background: linear-gradient(135deg, rgba(191, 0, 255, 0.1), rgba(255, 0, 127, 0.1));
+            border: 3px solid var(--neon-pink);
+            box-shadow: 0 0 30px rgba(255, 0, 127, 0.3);
+            min-height: 200px;
+            padding: 2rem;
+            border-radius: 1rem;
+        }
+
+        .timer-bar {
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .timer-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+            box-shadow: 0 0 10px var(--neon-green);
+            transition: width 1s linear;
+        }
+
+        .timer-progress.warning {
+            background: linear-gradient(90deg, #ff4500, #ff0000);
+            box-shadow: 0 0 10px #ff4500;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .pulse {
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            75% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        .celebrate {
+            animation: celebrate 0.6s ease-in-out 3;
+        }
+
+        .vote-button {
+            font-size: 2rem;
+            padding: 1.5rem;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 640px) {
+            .prompt-card {
+                min-height: 160px;
+                padding: 1.5rem;
+            }
+            
+            .vote-button {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <div id="site-header"></div>
+
+    <main class="flex-1 flex items-center justify-center py-8 px-4" role="main">
+        <div class="max-w-4xl w-full">
+            
+            <!-- Setup Screen -->
+            <div id="setup-screen" class="space-y-6">
+                <header class="text-center mb-8">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-4 tracking-tight neon-glow-pink">
+                        🎤 Rhyme or Reason 🎭
+                    </h1>
+                    <p class="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto">
+                        Creative challenge! Come up with rhymes OR reasons on the spot for random prompts. Quick thinking meets wordplay!
+                    </p>
+                </header>
+
+                <div class="game-card p-8 rounded-xl">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span>🎮</span> Game Setup
+                    </h2>
+                    
+                    <div class="mb-6">
+                        <label for="player-count" class="block text-lg font-medium text-gray-300 mb-2">
+                            Number of Players (2-6):
+                        </label>
+                        <input 
+                            type="number" 
+                            id="player-count" 
+                            min="2" 
+                            max="6" 
+                            value="2" 
+                            class="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border-2 border-gray-700 focus:border-pink-500 focus:outline-none text-lg"
+                        >
+                    </div>
+
+                    <div id="player-names-container" class="mb-6 space-y-3">
+                        <!-- Player name inputs will be generated here -->
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="target-score" class="block text-lg font-medium text-gray-300 mb-2">
+                            Target Score to Win:
+                        </label>
+                        <select 
+                            id="target-score" 
+                            class="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border-2 border-gray-700 focus:border-pink-500 focus:outline-none text-lg"
+                        >
+                            <option value="5">5 points</option>
+                            <option value="10" selected>10 points (Default)</option>
+                            <option value="15">15 points</option>
+                            <option value="20">20 points</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-300 mb-3">How to Play:</h3>
+                        <ul class="space-y-2 text-gray-400">
+                            <li class="flex gap-2">
+                                <span class="text-pink-400">🎤</span>
+                                <span>Each player gets a random prompt</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-pink-400">🎭</span>
+                                <span>Choose RHYME (provide a rhyming word/phrase) or REASON (give a fact/explanation)</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-pink-400">⏱️</span>
+                                <span>You have 15 seconds to think and respond verbally</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-pink-400">👥</span>
+                                <span>Other players vote if your answer is acceptable</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-pink-400">🏆</span>
+                                <span>+1 point if majority approves. First to reach target score wins!</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-pink-400">⏭️</span>
+                                <span>You can skip if stuck (no points)</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button id="start-game-btn" class="neon-button w-full py-4 text-xl font-bold uppercase tracking-wider">
+                        Start Playing! 🎉
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Screen -->
+            <div id="game-screen" class="hidden space-y-6">
+                <header class="text-center">
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-white mb-2 neon-glow-pink">
+                        🎤 Rhyme or Reason 🎭
+                    </h1>
+                </header>
+
+                <!-- Scoreboard -->
+                <div class="game-card p-4 rounded-xl">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Scoreboard</h3>
+                    <div id="scoreboard" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <!-- Player scores will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Current Turn Indicator -->
+                <div id="turn-indicator" class="text-center p-4 game-card rounded-xl">
+                    <p class="text-lg text-gray-400">Current Player:</p>
+                    <p id="current-player-name" class="text-2xl font-bold neon-glow-cyan mt-1"></p>
+                </div>
+
+                <!-- Prompt Display -->
+                <div id="prompt-section" class="prompt-card">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-400 uppercase tracking-wider mb-2">Your Prompt:</p>
+                        <p id="prompt-display" class="text-3xl sm:text-4xl font-bold text-white mb-4"></p>
+                        <p id="choice-display" class="text-xl font-semibold hidden mb-2"></p>
+                        <div id="timer-container" class="hidden">
+                            <p id="timer-display" class="text-2xl font-bold text-white mb-2">15</p>
+                            <div class="timer-bar">
+                                <div id="timer-progress" class="timer-progress"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Choice Buttons (RHYME or REASON) -->
+                <div id="choice-buttons" class="hidden grid grid-cols-2 gap-4">
+                    <button id="rhyme-btn" class="neon-button neon-button-pink py-6 text-xl font-bold uppercase">
+                        🎵 RHYME
+                    </button>
+                    <button id="reason-btn" class="neon-button neon-button-cyan py-6 text-xl font-bold uppercase">
+                        💡 REASON
+                    </button>
+                </div>
+
+                <!-- Action Buttons -->
+                <div id="action-buttons" class="space-y-3">
+                    <button id="new-round-btn" class="neon-button w-full py-4 text-xl font-bold uppercase pulse">
+                        Start Round 🎲
+                    </button>
+                    <button id="skip-btn" class="neon-button neon-button-pink w-full py-3 text-lg hidden">
+                        Skip ⏭️
+                    </button>
+                </div>
+
+                <!-- Voting Section -->
+                <div id="voting-section" class="hidden game-card p-6 rounded-xl">
+                    <h3 class="text-xl font-bold text-white text-center mb-4">
+                        Is <span id="voting-player-name" class="neon-glow-cyan"></span>'s answer acceptable?
+                    </h3>
+                    <p class="text-center text-gray-400 mb-4">
+                        Player said: "<span id="voting-choice" class="neon-glow-pink"></span>"
+                    </p>
+                    <div class="flex justify-center gap-6">
+                        <button id="approve-btn" class="vote-button neon-button">
+                            👍
+                        </button>
+                        <button id="reject-btn" class="vote-button neon-button neon-button-pink">
+                            👎
+                        </button>
+                    </div>
+                    <div id="vote-tally" class="text-center mt-4 text-sm text-gray-400">
+                        Votes: <span id="vote-count">0</span> / <span id="vote-total">0</span>
+                    </div>
+                </div>
+
+                <button id="reset-game-btn" class="neon-button w-full py-3 text-lg" onclick="location.reload()">
+                    New Game 🔄
+                </button>
+            </div>
+
+            <!-- Win Screen -->
+            <div id="win-screen" class="hidden space-y-6">
+                <div class="game-card p-8 rounded-xl text-center">
+                    <h2 class="text-5xl font-extrabold mb-6 celebrate neon-glow-green">
+                        🎉 Winner! 🎉
+                    </h2>
+                    <p class="text-3xl font-bold text-white mb-4">
+                        <span id="winner-name" class="neon-glow-cyan"></span>
+                    </p>
+                    <p class="text-xl text-gray-300 mb-8">
+                        Final Score: <span id="winner-score" class="neon-glow-green"></span> points
+                    </p>
+                    <button id="play-again-btn" class="neon-button w-full py-4 text-xl font-bold uppercase" onclick="location.reload()">
+                        Play Again! 🎮
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ===== GAME GUIDE ===== -->
+    <section class="game-guide" aria-labelledby="ror-guide-heading" style="max-width:700px;margin:2rem auto;padding:1.5rem 1.25rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#cdd6e0;font-family:Inter,system-ui,sans-serif;line-height:1.7;">
+        <h2 id="ror-guide-heading" style="color:#ff007f;font-size:1.4rem;font-weight:800;margin:0 0 0.75rem;">📖 Rhyme or Reason – Game Guide</h2>
+        <p style="margin:0 0 0.75rem;">Rhyme or Reason is a quick-thinking word party game. When given a prompt word, you must respond with either a word that <em>rhymes</em> with it or a word that logically <em>follows</em> from it — before your time runs out!</p>
+        <h3 style="color:#00ffff;font-size:1rem;font-weight:700;margin:1rem 0 0.4rem;">How to Play</h3>
+        <ol style="margin:0 0 0.75rem;padding-left:1.4rem;">
+            <li>Set up players and choose a target score to win.</li>
+            <li>On your turn a prompt word is displayed — respond with a rhyme or a reason.</li>
+            <li>Other players vote on whether your answer is acceptable.</li>
+            <li>Earn a point for accepted answers; lose nothing for rejections but your dignity.</li>
+            <li>First player to reach the target score wins!</li>
+        </ol>
+        <h3 style="color:#00ffff;font-size:1rem;font-weight:700;margin:1rem 0 0.4rem;">Tips</h3>
+        <ul style="margin:0;padding-left:1.4rem;">
+            <li>Rhymes don't need to be perfect — near-rhymes often pass the vote.</li>
+            <li>Reasons should be logical or funny — the crowd decides!</li>
+            <li>Think fast; hesitation loses rounds.</li>
+        </ul>
+    </section>
+
+    <div id="site-footer"></div>
+    <script src="script.js"></script>
+    <script src="/scripts/load-partials.js"></script>
+</body>
+</html>
